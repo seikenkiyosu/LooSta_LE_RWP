@@ -8,7 +8,7 @@ class Loosta_LE_RWP{
 	public static final int Roundnum = 1000000;
 	
 	public static final int s = 96;			//96�ȏ��3n�ȏ�
-	public static final int n = 20;
+	public static final int n = 30;
 	
 	public static final int r = 10;	//vの速度の上限
 	public static final int DistanceforInteraction = 5;	//interactionができる距離
@@ -36,9 +36,9 @@ class Loosta_LE_RWP{
 			int leadercount=0;
 			//リーダの数をかぞえる
 			for(int j=0; j<n; j++) if(agent[j].IsLeader()){ leadercount++; }
-			System.out.println("the number of leaders = " + leadercount);
 			//Holding Timeが終了したらぬける
 			if(leadercount!=1 && HT_count_flag==true){ break; }
+			System.out.println("the number of leaders = " + leadercount);
 			//リーダが決まったとき
 			if(leadercount==1 && HT==0){ 
 				HT_count_flag = true;
@@ -50,10 +50,11 @@ class Loosta_LE_RWP{
 			
 			while(true){					//一回の交流がちゃんと終わるまで				
 				for(int j=0; j<n; j++){			//for each node
-				/*decide destination begin*/
+					/*decide destination begin*/
 					if(HaveDest[j] == false){
 						R[j] = random.nextInt(Gridsize)+random.nextDouble();
 						THETA[j] = random.nextInt(360)+random.nextDouble();
+						MoveDis[j] = 0.0;
 						while(0>agent[j].getx()+R[j]*Math.cos(THETA[j])||agent[j].getx()+R[j]*Math.cos(THETA[j])>Gridsize
 								||0>agent[j].gety()+R[j]*Math.sin(THETA[j])||agent[j].gety()+R[j]*Math.sin(THETA[j])>Gridsize){
 							R[j] = random.nextInt(Gridsize)+random.nextDouble();
@@ -70,17 +71,24 @@ class Loosta_LE_RWP{
 							HaveDest[j] = false;
 						}
 						agent[j].ShiftPointForRWP( vr, THETA[j]);	//移動
+						MoveDis[j] += vr;
+					}
+					else {
+						double vr = R[j]-MoveDis[j];
+						HaveDest[j] = false;
+						agent[j].ShiftPointForRWP( vr, THETA[j]);
+						MoveDis[j] += vr;
 					}
 					/*agent move process end*/
 				}
 				/*interaction process begin*/
 				int p = random.nextInt(n);		//interactionをするagentをランダムで選択
-				int q = RandomWay_RWP.RandamPickNearAgent( p, n, agent, DistanceforInteraction);		//p�Ƌ���1�ȓ��ɂ���m�[�h�̒���(���id�̒Ⴂ)�m�[�h��q�ɑ��
-				if(q != -1) { 	//pの周りにinteractionが可能なAgentが見つかったとき
-					Interaction_RWP.interaction(agent[p], agent[q], s);	
-					for(int j=0; j<n; j++) agent[j].Countdown();	//交流したagentのtimerをデクリメント
-					break;						//次のラウンドへ
-				}
+				int q = RandomWay_RWP.RandamPickNearAgent( p, n, agent, DistanceforInteraction);		//pからDI離れた範囲でランダムにAgentを拾ってqに代入
+				if(q != -1) { 	//qが見つかったら
+					Interaction_RWP.interaction(agent[p], agent[q], s);		//pとqをinteractionさせる
+					for(int j=0; j<n; j++) agent[j].Countdown();	//interactionしたagentのtimerをデクリメント
+					break;
+				}//次のラウンドへ
 				/*interaction process end*/
 			}
 		}
